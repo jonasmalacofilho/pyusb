@@ -1,0 +1,40 @@
+Code:
+
+- usb.core.find(...)
+- dev.set_configuration()
+- dev.get_active_configuration()
+- dev.set_interface_altsetting(interface=0, alternate_setting=...)
+- usb.util.find_descriptor(...) -> ep
+- usb.util.find_descriptor(...) -> ep2
+- dev.write(...) on a separate thread, with endpoint address
+- dev.read(...) on the main thread, concurrently, with endpoint addresses
+
+
+Sample 1: https://github.com/pyusb/pyusb/issues/380#issuecomment-1082500362
+
+- Cystream FW for the Cypress EZUSB FX2LP; Ubuntu 20.04 x64
+- interface 0, altsetting 6
+- _LibUSB.bulk_read
+
+
+Fixed _ep_info and adding _intf_setting.
+
+
+Sample 10a: https://github.com/pyusb/pyusb/issues/380#issuecomment-1082695912, winusb_staging.log
+
+- Presumably still the same device
+- interface 0, altsetting 6
+- _LibUSB.iso_read(dev, 130, 0, [0; 2**14], 1000) fails in LibUSB with I/O error 87 and results in Errno 5 Transfer Failed error
+- _LibUSB.iso_write(dev, 6, 0, ['A'; 2**14], 1000) fails in LibUSB with isoch packagets for OUT transfer with WinUSB must be contiguous in memory
+- Finalizer crashes with _IsoTransferHandler object has no attribute transfer at _lib.libusb_free_transfer(self.transfer)
+
+
+Sample 10b: https://github.com/pyusb/pyusb/issues/380#issuecomment-1082695912, libusbk_staging.log
+
+- Presumably still the same device
+- interface 0, altsetting 6
+- _LibUSB.iso_read(dev, 130, 0, [0; 2**14], 1000) fails in LibUSB with errcode 31 and results in Errno 5
+- LibUSB also reports an endpoint stall
+- But the error message for Errno 5 is different and weird
+- _LibUSB.iso_write does not _immediately_ appear to fail
+- Finalizer crashes, but the traceback is not complete
